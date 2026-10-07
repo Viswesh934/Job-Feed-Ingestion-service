@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateAndNormalizeEvent, normalizeSkills } from '../../src/domain/validation.js';
+import { validateAndNormalizeEvent, normalizeSkills } from '../../src/domain/validation';
 
 describe('Event Validation and Normalization', () => {
   const validUpsert = {

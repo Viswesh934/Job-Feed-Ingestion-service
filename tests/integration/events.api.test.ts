@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../../src/api/app.js';
-import { setupTestDb, teardownTestDb, clearTestDb } from './setup.js';
-import { getEventsCollection } from '../../src/db/collections.js';
+import { createApp } from '../../src/api/app';
+import { setupTestDb, teardownTestDb, clearTestDb } from './setup';
+import { getEventsCollection } from '../../src/db/collections';
 import { Db } from 'mongodb';
 
 describe('Phase 1: Ingestion API Integration Tests', () => {
