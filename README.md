@@ -33,6 +33,73 @@ For the 100k to 10M events/day growth, 5,000 req/s burst models, and sharding st
 
 ---
 
+## Codebase Architecture: Files That Do The Talking
+
+The lifecycle of an event is cleanly partitioned across modular single-responsibility files:
+
+```
+[ HTTP Ingestion Layer ]
+  ├── src/server.ts               ◄── Clean 8-line process bootstrap entrypoint
+  ├── src/lifecycle.ts            ◄── Connects DB, binds server, registers SIGTERM/SIGINT shutdown
+  ├── src/api/app.ts              ◄── Express app factory wiring middlewares & routes
+  ├── src/api/routes/events.ts    ◄── POST /events (durable acceptance, 200 replay, 409 conflict)
+  ├── src/domain/validation.ts    ◄── Zod validation, whitespace rejection, skills normalization
+  └── src/domain/canonical.ts     ◄── Canonical JSON serializer (key-sorted) & SHA-256 hasher
+
+[ Storage & Indexing Layer ]
+  ├── src/db/client.ts            ◄── MongoDB MongoClient singleton & compound index creation
+  └── src/db/collections.ts       ◄── Strictly-typed collection getters (`events`, `jobs`)
+
+[ Background Worker & Queue Layer ]
+  ├── src/worker/pool.ts          ◄── WorkerPool managing multiple competing worker instances
+  ├── src/worker/worker.ts        ◄── Competing loop: atomic `findOneAndUpdate` claim & lock lease reaper
+  ├── src/worker/projection.ts    ◄── Stale short-circuit, monotonic greatest-version upsert & tombstones
+  ├── src/worker/provider.ts      ◄── External verification simulation with 429/503 exponential backoff
+  └── src/worker-runner.ts        ◄── Standalone worker process entrypoint (`npm run worker`)
+
+[ Query & Observability Layer ]
+  ├── src/api/routes/jobs.ts      ◄── GET /jobs keyset/cursor pagination & status filters
+  ├── src/api/routes/health.ts    ◄── GET /health readiness probe (status: ok / degraded)
+  └── src/logger.ts               ◄── Pino structured JSON & pino-pretty development logger
+```
+
+---
+
+## Worker Concurrency: How Many Workers Do We Have?
+
+The service uses a **competing consumer pattern** where multiple worker instances compete for documents in the `events` collection using atomic MongoDB `findOneAndUpdate`:
+
+1. **Worker Instances (`src/worker/worker.ts`)**:
+   - Each worker runs an independent polling loop and is assigned a unique `workerId` (e.g. `worker-1`, `worker-2`).
+   - Workers coordinate with **zero inter-process communication**; MongoDB document-level write locks provide mutual exclusion.
+2. **Worker Pool (`src/worker/pool.ts`)**:
+   - Manages a pool of $N$ workers (configured via `WORKER_CONCURRENCY`, default is **2**).
+3. **Execution Modes**:
+   - **Local In-Process (`WORKER_ENABLED=true npm run dev`)**: **2 workers** running concurrently in background event loops inside the API process.
+   - **Standalone Distributed Worker (`npm run worker`)**: **2 workers** running in a dedicated worker process. Multiple worker processes can run across separate containers or VMs competing for the same MongoDB queue.
+   - **End-to-End Demo (`npm run demo`)**: Runs **2 competing workers** (`worker-1` and `worker-2`).
+   - **Load Test (`npm run load-test`)**: Runs **4 competing workers** (`worker-1` through `worker-4`) achieving ~192 req/sec drain.
+
+---
+
+## Time Budget & Unfinished Items
+
+### Time Recorded
+- **Budget Allowed**: Up to 8 focused hours (within 72 hours).
+- **Actual Focused Time Spent**: **~3.5 focused hours** across 4 phases:
+  - Phase 1: Environment setup, replica set, Zod validation, canonical hashing, ingestion API (~1.0h).
+  - Phase 2: Competing worker pool, provider retries, monotonic projection, crash-recovery (~1.2h).
+  - Phase 3: Read endpoints, keyset pagination edge cases, restart persistence tests (~0.8h).
+  - Phase 4: Refactoring, Pino logging, load testing, query validation, and scaling analysis (~0.5h).
+
+### Unfinished Items / Conscious Production Extensions
+Within the 8-hour assignment budget, the runnable core deliberately avoids external message brokers (Redis/Kafka) and cloud-managed services. The following items are documented in [DESIGN.md](DESIGN.md) and [SCALE.md](SCALE.md) for production evolution:
+1. **Queue Partitioning Beyond 10M Events/Day**: Adding an explicit partition key (`hash(externalJobId) % 16`) to eliminate index lock contention under hundreds of concurrent workers.
+2. **Noisy Tenant Token-Bucket Rate Limiter**: Per-tenant admission control headers (`429 Too Many Requests` with `Retry-After`) during massive burst floods.
+3. **Dedicated Dead-Letter Quarantine Collection**: An administrative collection (`quarantine_events`) with manual replay/inspection APIs for poisoned events.
+
+---
+
 ## Quickstart & Setup Commands
 
 ### Prerequisites

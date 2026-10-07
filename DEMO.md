@@ -83,4 +83,53 @@ Run all unit and integration tests:
 ```bash
 npm test
 ```
-All 47 tests across 5 test suites pass in $\sim 2\text{ seconds}$, verifying validation, canonical hashing, API endpoints, competing workers, exponential backoff, tombstone preservation, and crash recovery.
+All 54 tests across 6 test suites pass in $\sim 3\text{ seconds}$, verifying validation, canonical hashing, API endpoints, competing workers, exponential backoff, tombstone preservation, keyset pagination edge cases, and crash recovery.
+
+---
+
+## 5. 25-Minute Interview Walkthrough Guide
+
+Use this section as your cheat-sheet during the technical interview walkthrough.
+
+### 1. Run the Demo
+- **Command**: `npm run demo`
+- **What to narrate**:
+  - *"The demo initializes MongoDB indexes, starts 2 competing workers in the background, and submits Phase 1 (18 requests)."*
+  - Point out `#1-#3` returning `400` without reserving an ID, `#4` successfully reusing `#2`'s ID with corrected data, `#6` returning `200` for an exact replay with permuted keys, and `#10-#12` handling archive tombstones and reactivation.
+  - Show the queue draining, Phase 2 delayed events submitting, and the final projection displaying for `tenant-alpha`.
+
+### 2. Explain One Race / Failure Path
+- **The Case**: Worker crashes after updating the `jobs` projection in MongoDB, but before acknowledging the event document.
+- **Code Reference**: `tests/integration/worker.test.ts` (lines 375–430) & `src/worker/worker.ts` (line 152).
+- **Explanation**:
+  1. Worker 1 calls `applyJobProjection(event)` which successfully updates the `jobs` collection to Version $V$.
+  2. Worker 1 process dies unexpectedly (`kill -9`). The event in `events` collection remains in `status: 'processing'` with lock held.
+  3. The lock lease expires after `lockTimeoutMs` (30s in production, 50ms in test).
+  4. Worker 2 runs `reapAbandonedLocks()`, discovers the expired lease, resets it to `'pending'`, and claims it.
+  5. Worker 2 executes `isEventStale()`. It inspects the `jobs` projection and sees that `currentJob.version >= event.version` (already at Version $V$).
+  6. Worker 2 immediately marks the event as `'completed'` as an idempotent **no-op**. It does NOT call external verification again and does NOT duplicate the projection. Zero data corruption, zero duplicates.
+
+### 3. Defend One Scaling Calculation
+- **The Case**: Sustaining a burst of 5,000 events/second under a 5-minute (300s) SLA.
+- **Document Reference**: `SCALE.md` (Section 1).
+- **The Formula**:
+  $$\text{Drain Rate } C_{\text{drain}} = \frac{\text{Burst Backlog}}{\text{SLA Window (300s)}}$$
+  $$\text{Max Burst Duration } T_{\text{burst, max}} = \frac{C_{\text{drain}} \times 300}{5,000 - C_{\text{drain}}}$$
+- **Explanation**:
+  - If we size our worker pool for $C_{\text{drain}} = 1,200\text{ events/sec}$ (12 worker processes across 3 pods):
+  - $T_{\text{burst, max}} = \frac{1,200 \times 300}{5,000 - 1,200} = \frac{360,000}{3,800} \approx \mathbf{94.7\text{ seconds}}$.
+  - *"Our system can absorb a sustained firehose burst of 5,000 req/sec for up to 95 consecutive seconds without missing the 5-minute SLA."*
+
+### 4. Show One AI-Assisted Change & Human QC
+- **Document Reference**: `AI_USAGE.md` (Artifact 1 & 2).
+- **Explanation**:
+  - *"We used AI to generate the recursive canonical JSON serializer in `src/domain/canonical.ts`. During human review, we verified the critical boundary condition: object keys must sort lexicographically to ignore insertion order (`{ a, b } == { b, a }`), but arrays like `skills: ['TypeScript', 'MongoDB']` must preserve exact sequence order. We wrote `tests/unit/canonical.test.ts` to independently prove this invariant."*
+
+### 5. Make a Small Live Change with Regression Test
+If asked to add a small feature live:
+- **Example Task**: Add a `remote: boolean` flag or a `salaryMin?: number` field to the payload.
+- **Files to touch**:
+  1. Add to `src/domain/types.ts`: `remote?: boolean`.
+  2. Add to `src/domain/validation.ts`: `remote: z.boolean().optional()`.
+  3. Add a test in `tests/unit/validation.test.ts`.
+  4. Run `npm test` to show it passes cleanly with zero regression.
