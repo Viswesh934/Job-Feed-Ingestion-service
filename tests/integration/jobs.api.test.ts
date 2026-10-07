@@ -40,6 +40,40 @@ describe('GET /jobs API Integration Tests', () => {
       const res = await request(app).get('/jobs?tenantId=tenant-a&status=deleted');
       expect(res.status).toBe(400);
     });
+
+    it('returns 400 when limit is not a valid positive integer', async () => {
+      const res1 = await request(app).get('/jobs?tenantId=tenant-a&limit=abc');
+      expect(res1.status).toBe(400);
+      expect(res1.body.error).toContain('limit');
+
+      const res2 = await request(app).get('/jobs?tenantId=tenant-a&limit=-5');
+      expect(res2.status).toBe(400);
+
+      const res3 = await request(app).get('/jobs?tenantId=tenant-a&limit=10.5');
+      expect(res3.status).toBe(400);
+
+      const res4 = await request(app).get('/jobs?tenantId=tenant-a&limit=0');
+      expect(res4.status).toBe(400);
+
+      const res5 = await request(app).get('/jobs?tenantId=tenant-a&limit=150');
+      expect(res5.status).toBe(400);
+    });
+
+    it('returns 400 when cursor is malformed or contains invalid data', async () => {
+      const res1 = await request(app).get('/jobs?tenantId=tenant-a&cursor=not-a-valid-cursor');
+      expect(res1.status).toBe(400);
+      expect(res1.body.error).toContain('cursor');
+
+      // Invalid date inside base64url JSON
+      const badDateCursor = Buffer.from(JSON.stringify({ updatedAt: 'invalid-date', id: '65a288f5d1b0a2e2046a61a1' })).toString('base64url');
+      const res2 = await request(app).get(`/jobs?tenantId=tenant-a&cursor=${badDateCursor}`);
+      expect(res2.status).toBe(400);
+
+      // Invalid ObjectId inside base64url JSON
+      const badIdCursor = Buffer.from(JSON.stringify({ updatedAt: new Date().toISOString(), id: 'not-an-objectid' })).toString('base64url');
+      const res3 = await request(app).get(`/jobs?tenantId=tenant-a&cursor=${badIdCursor}`);
+      expect(res3.status).toBe(400);
+    });
   });
 
   describe('Filtering and Scoping', () => {

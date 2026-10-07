@@ -340,6 +340,17 @@ describe('Phase 1: Ingestion API Integration Tests', () => {
       expect(res.status).toBe(400);
     });
 
+    it('returns 400 when tenantId or sourceId has surrounding whitespace', async () => {
+      const res1 = await request(app).get('/events/event-101?tenantId=%20tenant-a&sourceId=main');
+      expect(res1.status).toBe(400);
+
+      const res2 = await request(app).get('/events/event-101?tenantId=tenant-a&sourceId=main%20');
+      expect(res2.status).toBe(400);
+
+      const res3 = await request(app).get('/events/%20event-101?tenantId=tenant-a&sourceId=main');
+      expect(res3.status).toBe(400);
+    });
+
     it('returns event metadata for existing event', async () => {
       const event = {
         tenantId: 'tenant-a',

@@ -24,8 +24,11 @@ function decodeCursor(cursorStr: string): { updatedAt: Date; id: ObjectId } | nu
     const raw = Buffer.from(cursorStr, 'base64url').toString('utf-8');
     const parsed = JSON.parse(raw) as CursorPayload;
     if (!parsed.updatedAt || !parsed.id) return null;
+    const date = new Date(parsed.updatedAt);
+    if (isNaN(date.getTime())) return null;
+    if (!ObjectId.isValid(parsed.id)) return null;
     return {
-      updatedAt: new Date(parsed.updatedAt),
+      updatedAt: date,
       id: new ObjectId(parsed.id),
     };
   } catch {
@@ -61,19 +64,27 @@ jobsRouter.get('/', async (req: Request, res: Response) => {
     return;
   }
 
-  // 4. Validate limit (capped between 1 and 100, default 20)
-  const parsedLimit = parseInt(String(limit), 10);
-  if (isNaN(parsedLimit) || parsedLimit < 1) {
-    res.status(400).json({ error: 'limit parameter must be a positive integer' });
-    return;
+  // 4. Validate limit (strict positive integer between 1 and 100, default 20)
+  let cappedLimit = 20;
+  if (limit !== undefined) {
+    const limitStr = String(limit);
+    if (!/^\d+$/.test(limitStr)) {
+      res.status(400).json({ error: 'limit parameter must be a positive integer between 1 and 100' });
+      return;
+    }
+    const parsedLimit = parseInt(limitStr, 10);
+    if (parsedLimit < 1 || parsedLimit > 100) {
+      res.status(400).json({ error: 'limit parameter must be a positive integer between 1 and 100' });
+      return;
+    }
+    cappedLimit = parsedLimit;
   }
-  const cappedLimit = Math.min(parsedLimit, 100);
 
   // 5. Decode cursor if provided
   let cursorData: { updatedAt: Date; id: ObjectId } | null = null;
   if (cursor !== undefined) {
-    if (typeof cursor !== 'string') {
-      res.status(400).json({ error: 'cursor parameter must be a valid string' });
+    if (typeof cursor !== 'string' || cursor.trim().length === 0) {
+      res.status(400).json({ error: 'cursor parameter must be a nonblank string' });
       return;
     }
     cursorData = decodeCursor(cursor);
