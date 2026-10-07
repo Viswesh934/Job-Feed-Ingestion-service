@@ -5,7 +5,8 @@
 - **Node.js Version**: v24.21.0
 - **MongoDB**: 7.0 Single-Node Replica Set (`rs0`) via Docker Compose
 - **Date & Time of QC Pass**: 2026-10-07
-- **Base Commit Tested**: `0b4d728` (Phase 1) $\rightarrow$ working tree on branch `phase-2`
+- **Base Commit Tested**: `0b4d728` (Phase 1)
+- **Final Submission Commit SHA**: `ecb1872` (Phase 2 completion)
 
 ---
 
