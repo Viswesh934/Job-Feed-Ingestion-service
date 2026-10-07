@@ -1,5 +1,5 @@
 import { Db, MongoClient } from 'mongodb';
-import { connectToDatabase, closeDatabase } from '../../src/db/client.js';
+import { connectToDatabase, closeDatabase } from '../../src/db/client';
 
 let testDb: Db;
 let testClient: MongoClient;

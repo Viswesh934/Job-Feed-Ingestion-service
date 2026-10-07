@@ -1,8 +1,9 @@
 import { Db, Collection } from 'mongodb';
-import { EventDocument } from '../domain/types.js';
-import { getEventsCollection } from '../db/collections.js';
-import { ExternalVerificationProvider } from './provider.js';
-import { applyJobProjection, isEventStale } from './projection.js';
+import { EventDocument } from '../domain/types';
+import { getEventsCollection } from '../db/collections';
+import { ExternalVerificationProvider } from './provider';
+import { applyJobProjection, isEventStale } from './projection';
+import { logger } from '../logger';
 
 export interface WorkerOptions {
   workerId: string;
@@ -97,7 +98,7 @@ export class Worker {
     try {
       await this.handleEvent(claimed);
     } catch (err) {
-      console.error(`Worker [${this.workerId}] error processing event ${claimed.eventId}:`, err);
+      logger.error({ err, workerId: this.workerId, eventId: claimed.eventId }, 'Worker error processing event');
       // If error is not deliberate simulated crash, let lock timeout or rethrow
       throw err;
     }

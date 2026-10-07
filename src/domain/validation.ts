@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IngestionEventInput, NormalizedJobPayload } from './types.js';
+import { IngestionEventInput, NormalizedJobPayload } from './types';
 
 /**
  * Validates that an identifier string is nonblank and has no leading or trailing whitespace.

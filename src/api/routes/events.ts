@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { MongoServerError } from 'mongodb';
-import { getDb } from '../../db/client.js';
-import { getEventsCollection } from '../../db/collections.js';
-import { validateAndNormalizeEvent } from '../../domain/validation.js';
-import { stringifyCanonicalJson, hashCanonicalJson } from '../../domain/canonical.js';
-import { EventDocument } from '../../domain/types.js';
+import { getDb } from '../../db/client';
+import { getEventsCollection } from '../../db/collections';
+import { validateAndNormalizeEvent } from '../../domain/validation';
+import { stringifyCanonicalJson, hashCanonicalJson } from '../../domain/canonical';
+import { EventDocument } from '../../domain/types';
 
 export const eventsRouter = Router();
 

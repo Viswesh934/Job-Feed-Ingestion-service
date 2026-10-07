@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { ObjectId, Filter } from 'mongodb';
-import { getDb } from '../../db/client.js';
-import { getJobsCollection } from '../../db/collections.js';
-import { JobDocument } from '../../domain/types.js';
+import { getDb } from '../../db/client';
+import { getJobsCollection } from '../../db/collections';
+import { JobDocument } from '../../domain/types';
 
 export const jobsRouter = Router();
 

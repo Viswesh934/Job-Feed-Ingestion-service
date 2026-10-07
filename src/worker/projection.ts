@@ -1,6 +1,6 @@
 import { Db, MongoServerError } from 'mongodb';
-import { EventDocument, JobDocument } from '../domain/types.js';
-import { getJobsCollection } from '../db/collections.js';
+import { EventDocument, JobDocument } from '../domain/types';
+import { getJobsCollection } from '../db/collections';
 
 export interface ProjectionApplyResult {
   applied: boolean;

@@ -1,5 +1,5 @@
 import { Collection, Db } from 'mongodb';
-import { EventDocument, JobDocument } from '../domain/types.js';
+import { EventDocument, JobDocument } from '../domain/types';
 
 export function getEventsCollection(db: Db): Collection<EventDocument> {
   return db.collection<EventDocument>('events');

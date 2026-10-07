@@ -1,10 +1,10 @@
 import os from 'node:os';
 import request from 'supertest';
-import { createApp } from '../src/api/app.js';
-import { connectToDatabase, closeDatabase } from '../src/db/client.js';
-import { getEventsCollection, getJobsCollection } from '../src/db/collections.js';
-import { WorkerPool } from '../src/worker/pool.js';
-import { ExternalVerificationProvider } from '../src/worker/provider.js';
+import { createApp } from '../src/api/app';
+import { connectToDatabase, closeDatabase } from '../src/db/client';
+import { getEventsCollection, getJobsCollection } from '../src/db/collections';
+import { WorkerPool } from '../src/worker/pool';
+import { ExternalVerificationProvider } from '../src/worker/provider';
 
 interface RequestTask {
   body: Record<string, unknown>;

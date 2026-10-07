@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Db } from 'mongodb';
-import { setupTestDb, teardownTestDb, clearTestDb } from './setup.js';
-import { getEventsCollection, getJobsCollection } from '../../src/db/collections.js';
-import { Worker } from '../../src/worker/worker.js';
-import { WorkerPool } from '../../src/worker/pool.js';
-import { ExternalVerificationProvider } from '../../src/worker/provider.js';
-import { EventDocument } from '../../src/domain/types.js';
+import { setupTestDb, teardownTestDb, clearTestDb } from './setup';
+import { getEventsCollection, getJobsCollection } from '../../src/db/collections';
+import { Worker } from '../../src/worker/worker';
+import { WorkerPool } from '../../src/worker/pool';
+import { ExternalVerificationProvider } from '../../src/worker/provider';
+import { EventDocument } from '../../src/domain/types';
 
 describe('Phase 2: Worker and Projection Integration Tests', () => {
   let db: Db;

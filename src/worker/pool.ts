@@ -1,6 +1,6 @@
 import { Db } from 'mongodb';
-import { Worker, WorkerOptions } from './worker.js';
-import { ExternalVerificationProvider } from './provider.js';
+import { Worker, WorkerOptions } from './worker';
+import { ExternalVerificationProvider } from './provider';
 
 export interface WorkerPoolOptions {
   concurrency?: number;

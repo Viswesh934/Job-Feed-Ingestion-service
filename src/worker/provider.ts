@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { EventDocument } from '../domain/types.js';
+import { EventDocument } from '../domain/types';
+import { logger } from '../logger';
 
 export interface ProviderRule {
   eventId?: string;
@@ -51,7 +52,7 @@ export class ExternalVerificationProvider {
         return JSON.parse(raw);
       }
     } catch (err) {
-      console.warn(`Failed to read provider plan from ${filePath}:`, err);
+      logger.warn({ err, filePath }, 'Failed to read provider plan file');
     }
     return { defaultStatus: 200, rules: [] };
   }

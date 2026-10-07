@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canonicalizeJson, stringifyCanonicalJson, hashCanonicalJson } from '../../src/domain/canonical.js';
+import { canonicalizeJson, stringifyCanonicalJson, hashCanonicalJson } from '../../src/domain/canonical';
 
 describe('Canonical JSON serialization and hashing', () => {
   it('should produce identical canonical strings for objects with different key order', () => {

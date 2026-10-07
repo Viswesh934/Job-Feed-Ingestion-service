@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getDb } from '../../db/client.js';
+import { getDb } from '../../db/client';
 
 export const healthRouter = Router();
 

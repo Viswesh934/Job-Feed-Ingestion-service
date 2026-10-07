@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../../src/api/app.js';
-import { setupTestDb, teardownTestDb, clearTestDb } from './setup.js';
-import { getJobsCollection } from '../../src/db/collections.js';
+import { createApp } from '../../src/api/app';
+import { setupTestDb, teardownTestDb, clearTestDb } from './setup';
+import { getJobsCollection } from '../../src/db/collections';
 import { Db, ObjectId } from 'mongodb';
-import { JobDocument } from '../../src/domain/types.js';
+import { JobDocument } from '../../src/domain/types';
 
 describe('GET /jobs API Integration Tests', () => {
   let app: ReturnType<typeof createApp>;
