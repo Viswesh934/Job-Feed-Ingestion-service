@@ -1,0 +1,468 @@
+{
+  "phase1": [
+    {
+      "description": "Invalid input - leading whitespace in tenantId",
+      "expectedStatus": 400,
+      "body": {
+        "tenantId": " tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-invalid-1",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Software Engineer",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 1,
+          "experienceMax": 3,
+          "applyUrl": "https://example.test/jobs/alpha",
+          "skills": ["TypeScript"]
+        }
+      }
+    },
+    {
+      "description": "Invalid input - experienceMin greater than experienceMax",
+      "expectedStatus": 400,
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-invalid-2",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Software Engineer",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 5,
+          "experienceMax": 2,
+          "applyUrl": "https://example.test/jobs/alpha",
+          "skills": ["TypeScript"]
+        }
+      }
+    },
+    {
+      "description": "Invalid input - archive operation containing payload",
+      "expectedStatus": 400,
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-invalid-3",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "archive",
+        "payload": {
+          "title": "Should Not Exist"
+        }
+      }
+    },
+    {
+      "description": "Corrected reuse of rejected eventId req-invalid-2",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed"
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-invalid-2",
+        "externalJobId": "alpha-corrected",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Corrected Engineer",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 1,
+          "experienceMax": 5,
+          "applyUrl": "https://example.test/jobs/alpha-corrected",
+          "skills": ["TypeScript", "MongoDB"]
+        }
+      }
+    },
+    {
+      "description": "Valid upsert - initial version 1 for job alpha",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed"
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-upsert-1",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Full Stack Developer",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 1,
+          "experienceMax": 3,
+          "applyUrl": "https://example.test/jobs/alpha",
+          "skills": [" TypeScript ", "MongoDB", "typescript"]
+        }
+      }
+    },
+    {
+      "description": "Exact duplicate replay of req-upsert-1 with permuted keys",
+      "expectedStatus": 200,
+      "body": {
+        "payload": {
+          "skills": [" TypeScript ", "MongoDB", "typescript"],
+          "applyUrl": "https://example.test/jobs/alpha",
+          "experienceMax": 3,
+          "experienceMin": 1,
+          "location": "Surat",
+          "company": "Example Labs",
+          "title": "Full Stack Developer"
+        },
+        "operation": "upsert",
+        "version": 1,
+        "externalJobId": "alpha",
+        "eventId": "req-upsert-1",
+        "sourceId": "main",
+        "tenantId": "tenant-alpha"
+      }
+    },
+    {
+      "description": "Conflicting payload reuse of req-upsert-1",
+      "expectedStatus": 409,
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-upsert-1",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Conflicting Different Title",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 1,
+          "experienceMax": 3,
+          "applyUrl": "https://example.test/jobs/alpha",
+          "skills": ["TypeScript"]
+        }
+      }
+    },
+    {
+      "description": "Tenant collision isolation - same externalJobId under tenant-beta",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed"
+      },
+      "body": {
+        "tenantId": "tenant-beta",
+        "sourceId": "main",
+        "eventId": "req-iso-tenant",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Beta Developer",
+          "company": "Beta Corp",
+          "location": "Mumbai",
+          "experienceMin": 2,
+          "experienceMax": 4,
+          "applyUrl": "https://beta.test/jobs/alpha",
+          "skills": ["Node.js"]
+        }
+      }
+    },
+    {
+      "description": "Source collision isolation - same externalJobId under secondary source",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed"
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "secondary",
+        "eventId": "req-iso-source",
+        "externalJobId": "alpha",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Secondary Source Developer",
+          "company": "Secondary Labs",
+          "location": "Delhi",
+          "experienceMin": 3,
+          "experienceMax": 5,
+          "applyUrl": "https://secondary.test/jobs/alpha",
+          "skills": ["Go"]
+        }
+      }
+    },
+    {
+      "description": "Archive arrives before upsert - job beta created as tombstone",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "archived",
+        "jobVersion": 1
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-arch-early",
+        "externalJobId": "beta",
+        "version": 1,
+        "operation": "archive"
+      }
+    },
+    {
+      "description": "Delayed stale upsert for job beta (version 1) - no-op against tombstone",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "archived",
+        "jobVersion": 1
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-upsert-stale",
+        "externalJobId": "beta",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Stale Beta Role",
+          "company": "Beta Labs",
+          "location": "Pune",
+          "experienceMin": 1,
+          "experienceMax": 2,
+          "applyUrl": "https://beta.test/jobs/old",
+          "skills": ["Java"]
+        }
+      }
+    },
+    {
+      "description": "Higher upsert (version 2) reactivates job beta",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "active",
+        "jobVersion": 2
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-reactivate",
+        "externalJobId": "beta",
+        "version": 2,
+        "operation": "upsert",
+        "payload": {
+          "title": "Reactivated Beta Role",
+          "company": "Beta Labs",
+          "location": "Pune",
+          "experienceMin": 2,
+          "experienceMax": 4,
+          "applyUrl": "https://beta.test/jobs/reactivated",
+          "skills": ["Python", "FastAPI"]
+        }
+      }
+    },
+    {
+      "description": "Provider 429 retry - succeeds on subsequent attempt",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "minAttempts": 2,
+        "jobStatus": "active"
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-prov-429",
+        "externalJobId": "gamma",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "DevOps Engineer",
+          "company": "Cloud Ops",
+          "location": "Bengaluru",
+          "experienceMin": 3,
+          "experienceMax": 6,
+          "applyUrl": "https://cloudops.test/jobs/gamma",
+          "skills": ["Docker", "Kubernetes"]
+        }
+      }
+    },
+    {
+      "description": "Provider 422 permanent failure - event fails, projection not updated",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "failed",
+        "jobExists": false
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-prov-422",
+        "externalJobId": "delta",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Unprocessable Role",
+          "company": "Fail Corp",
+          "location": "Chennai",
+          "experienceMin": 1,
+          "experienceMax": 2,
+          "applyUrl": "https://failcorp.test/jobs/delta",
+          "skills": ["C++"]
+        }
+      }
+    },
+    {
+      "description": "Provider 503 retry exhaustion - fails after 3 attempts",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "failed",
+        "attempts": 3,
+        "jobExists": false
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-prov-503",
+        "externalJobId": "epsilon",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Exhausted Role",
+          "company": "Unavailable Inc",
+          "location": "Hyderabad",
+          "experienceMin": 2,
+          "experienceMax": 4,
+          "applyUrl": "https://unavailable.test/jobs/epsilon",
+          "skills": ["Ruby"]
+        }
+      }
+    },
+    {
+      "description": "Out-of-order version: version 2 submitted first",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "active",
+        "jobVersion": 2
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-ooo-v2",
+        "externalJobId": "zeta",
+        "version": 2,
+        "operation": "upsert",
+        "payload": {
+          "title": "Architect V2",
+          "company": "Zeta Systems",
+          "location": "Kolkata",
+          "experienceMin": 8,
+          "experienceMax": 12,
+          "applyUrl": "https://zeta.test/jobs/zeta-v2",
+          "skills": ["Architecture", "System Design"]
+        }
+      }
+    },
+    {
+      "description": "Out-of-order version: older version 1 arrives after version 2",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "active",
+        "jobVersion": 2
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-ooo-v1",
+        "externalJobId": "zeta",
+        "version": 1,
+        "operation": "upsert",
+        "payload": {
+          "title": "Junior Architect V1",
+          "company": "Zeta Systems",
+          "location": "Kolkata",
+          "experienceMin": 4,
+          "experienceMax": 6,
+          "applyUrl": "https://zeta.test/jobs/zeta-v1",
+          "skills": ["Architecture"]
+        }
+      }
+    },
+    {
+      "description": "Normal update: job alpha updated to version 2",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "active",
+        "jobVersion": 2
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-update-v2",
+        "externalJobId": "alpha",
+        "version": 2,
+        "operation": "upsert",
+        "payload": {
+          "title": "Lead Full Stack Developer",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 3,
+          "experienceMax": 5,
+          "applyUrl": "https://example.test/jobs/alpha-v2",
+          "skills": ["TypeScript", "MongoDB", "Node.js"]
+        }
+      }
+    }
+  ],
+  "phase2": [
+    {
+      "description": "Delayed Phase 2 - Archive job alpha at version 3",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "archived",
+        "jobVersion": 3
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-phase2-arch",
+        "externalJobId": "alpha",
+        "version": 3,
+        "operation": "archive"
+      }
+    },
+    {
+      "description": "Delayed Phase 2 - Late retransmission of old version 2 with new eventId",
+      "expectedStatus": 202,
+      "expectedFinalState": {
+        "eventStatus": "completed",
+        "jobStatus": "archived",
+        "jobVersion": 3
+      },
+      "body": {
+        "tenantId": "tenant-alpha",
+        "sourceId": "main",
+        "eventId": "req-phase2-late",
+        "externalJobId": "alpha",
+        "version": 2,
+        "operation": "upsert",
+        "payload": {
+          "title": "Old Version 2 Retransmission",
+          "company": "Example Labs",
+          "location": "Surat",
+          "experienceMin": 3,
+          "experienceMax": 5,
+          "applyUrl": "https://example.test/jobs/alpha-v2",
+          "skills": ["TypeScript"]
+        }
+      }
+    }
+  ]
+}

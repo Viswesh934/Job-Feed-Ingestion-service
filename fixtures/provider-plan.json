@@ -1,0 +1,29 @@
+{
+  "defaultStatus": 200,
+  "rules": [
+    {
+      "eventId": "event-retry-429-success",
+      "responses": [429, 200]
+    },
+    {
+      "eventId": "event-fail-422",
+      "responses": [422]
+    },
+    {
+      "eventId": "event-retry-503-exhaust",
+      "responses": [503, 503, 503]
+    },
+    {
+      "eventId": "req-prov-429",
+      "responses": [429, 200]
+    },
+    {
+      "eventId": "req-prov-422",
+      "responses": [422]
+    },
+    {
+      "eventId": "req-prov-503",
+      "responses": [503, 503, 503]
+    }
+  ]
+}

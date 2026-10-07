@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
+    "worker": "tsx src/worker-runner.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "tsx scripts/demo.ts",
