@@ -182,5 +182,55 @@ describe('GET /jobs API Integration Tests', () => {
       const uniqueFetched = new Set(allFetched);
       expect(uniqueFetched.size).toBe(5);
     });
+
+    it('handles concurrent insertions between pages without producing duplicate records', async () => {
+      // 1. Fetch Page 1 (limit 2)
+      const res1 = await request(app).get('/jobs?tenantId=tenant-pagination&limit=2');
+      expect(res1.status).toBe(200);
+      expect(res1.body.jobs).toHaveLength(2);
+      const cursor1 = res1.body.pageInfo.nextCursor;
+      const page1Ids = new Set(res1.body.jobs.map((j: { externalJobId: string }) => j.externalJobId));
+
+      // 2. Simulate concurrent insertion of a brand new job while client is between pages
+      const newJob: JobDocument = {
+        _id: new ObjectId(),
+        tenantId: 'tenant-pagination',
+        sourceId: 'main',
+        externalJobId: 'job-brand-new',
+        version: 1,
+        status: 'active',
+        title: 'Brand New Job',
+        lastEventId: 'ev-new',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await getJobsCollection(db).insertOne(newJob);
+
+      // 3. Client fetches Page 2 using cursor from Page 1
+      const res2 = await request(app).get(`/jobs?tenantId=tenant-pagination&limit=2&cursor=${cursor1}`);
+      expect(res2.status).toBe(200);
+
+      // Verify that none of the Page 1 items are duplicated in Page 2
+      for (const item of res2.body.jobs) {
+        expect(page1Ids.has(item.externalJobId)).toBe(false);
+      }
+    });
+
+    it('returns empty result when tenant has no jobs', async () => {
+      const res = await request(app).get('/jobs?tenantId=tenant-empty');
+      expect(res.status).toBe(200);
+      expect(res.body.jobs).toHaveLength(0);
+      expect(res.body.pageInfo.hasNextPage).toBe(false);
+      expect(res.body.pageInfo.nextCursor).toBeNull();
+    });
+
+    it('returns hasNextPage=false when total items match limit exactly', async () => {
+      // tenant-pagination currently has 5 items. Query limit 5:
+      const res = await request(app).get('/jobs?tenantId=tenant-pagination&limit=5');
+      expect(res.status).toBe(200);
+      expect(res.body.jobs).toHaveLength(5);
+      expect(res.body.pageInfo.hasNextPage).toBe(false);
+      expect(res.body.pageInfo.nextCursor).toBeNull();
+    });
   });
 });

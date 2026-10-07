@@ -155,6 +155,21 @@ If a worker crashes or encounters an unhandled process termination while holding
   `{ status: 'processing', lockedAt: { $lt: new Date(Date.now() - LOCK_TIMEOUT_MS) } }`
 - The lock lease is reset, incrementing or preserving the attempt counter, allowing surviving workers to safely resume the task.
 
+### Pagination Semantics and Data Changes Between Pages
+The `GET /jobs` endpoint employs deterministic keyset (cursor-based) pagination sorted by `{ updatedAt: -1, _id: -1 }`:
+- **Cursor Format**: An opaque, URL-safe base64url string encoding `{ updatedAt, id }`.
+- **Query Filter**:
+  ```typescript
+  $or: [
+    { updatedAt: { $lt: cursorDate } },
+    { updatedAt: cursorDate, _id: { $lt: cursorId } }
+  ]
+  ```
+- **Behavior When Data Changes Between Pages**:
+  1. *New Insertions*: New jobs inserted with `now()` timestamps appear at the top of the collection (before the cursor). A client paginating forward through older items will **not receive duplicate records**.
+  2. *Updates to Already-Seen Items*: If an item on Page 1 is updated while the client is fetching Page 2, its `updatedAt` shifts to the top of the collection. The client advancing forward will not see it again on future pages.
+  3. *Zero Duplicates Invariant*: Keyset pagination guarantees that records already traversed are never repeated, and pagination remains $O(1)$ without the performance degradation of `skip()` offsets.
+
 ---
 
 ## 5. Atomicity Boundaries and Independent Failure Modes
