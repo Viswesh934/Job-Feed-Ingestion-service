@@ -7,6 +7,15 @@
 - **Date & Time of QC Pass**: 2026-10-07
 - **Base Commit Tested**: `0b4d728` (Phase 1)
 - **Final Submission Commit SHA**: Phase 4 completion (synchronized across `phase-4` and `main`)
+- **Time Recorded**: **~3.5 focused hours** (across 4 phases within the 8-hour assignment window)
+  - Phase 1: Environment, replica set, Zod validation, canonical hashing, ingestion API (~1.0h)
+  - Phase 2: Competing worker pool, provider retries, monotonic projection, crash recovery (~1.2h)
+  - Phase 3: Read endpoints, keyset pagination edge cases, restart persistence (~0.8h)
+  - Phase 4: Refactoring lifecycle/Pino, load tests, query validation, and scaling documentation (~0.5h)
+- **Unfinished Items / Deliberately Deferred Production Extensions**:
+  1. *Queue Partitioning*: Adding `hash(externalJobId) % 16` partition keys beyond 10M events/day.
+  2. *Token-Bucket Rate Limiter*: Tenant-level rate limiting (`429 Retry-After`) for noisy neighbors.
+  3. *Dead-Letter Quarantine Collection*: Dedicated administrative collection for poison pills.
 
 ---
 
