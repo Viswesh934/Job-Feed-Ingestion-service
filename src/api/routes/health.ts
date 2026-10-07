@@ -3,6 +3,12 @@ import { getDb } from '../../db/client';
 
 export const healthRouter = Router();
 
+/**
+ * GET /health
+ * Returns service and dependency readiness with documented status names:
+ * - 'ok' (HTTP 200): Service is accepting HTTP requests and MongoDB replica set is connected and answering ping.
+ * - 'degraded' (HTTP 503): Service process is alive, but database connection is lost or failing commands.
+ */
 healthRouter.get('/', async (_req: Request, res: Response) => {
   try {
     const db = await getDb();
@@ -10,6 +16,7 @@ healthRouter.get('/', async (_req: Request, res: Response) => {
 
     res.status(200).json({
       status: 'ok',
+      service: 'job-feed-ingestion-service',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       dependencies: {
@@ -19,6 +26,7 @@ healthRouter.get('/', async (_req: Request, res: Response) => {
   } catch (err) {
     res.status(503).json({
       status: 'degraded',
+      service: 'job-feed-ingestion-service',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       dependencies: {

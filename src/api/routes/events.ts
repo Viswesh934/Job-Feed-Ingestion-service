@@ -43,6 +43,8 @@ eventsRouter.post('/', async (req: Request, res: Response) => {
       res.status(200).json({
         status: 'replayed',
         eventId: data.eventId,
+        tenantId: data.tenantId,
+        sourceId: data.sourceId,
         message: 'Event already accepted',
       });
       return;
@@ -95,6 +97,8 @@ eventsRouter.post('/', async (req: Request, res: Response) => {
         res.status(200).json({
           status: 'replayed',
           eventId: data.eventId,
+          tenantId: data.tenantId,
+          sourceId: data.sourceId,
           message: 'Event already accepted',
         });
         return;
@@ -160,6 +164,7 @@ eventsRouter.get('/:eventId', async (req: Request, res: Response) => {
     operation: eventDoc.operation,
     status: eventDoc.status,
     attempts: eventDoc.attempts,
+    attemptHistory: eventDoc.attemptHistory ?? [],
     lastError: eventDoc.lastError ?? null,
     createdAt: eventDoc.createdAt,
     updatedAt: eventDoc.updatedAt,

@@ -15,9 +15,9 @@
 | Verification Step | Command Run | Result | Evidence / Notes |
 |---|---|---|---|
 | **TypeScript Strict Checking** | `npm run build` | **PASS (0 errors)** | Compiled via `tsc` with `strict: true`, `noImplicitAny`, `noUncheckedIndexedAccess`. |
-| **Unit & Integration Tests** | `npm test` | **PASS (47/47 passed)** | 5 test files, 47 tests passed in 2.33s across real MongoDB replica set. |
+| **Unit & Integration Tests** | `npm test` | **PASS (51/51 passed)** | 6 test files, 51 tests passed in ~3s across real MongoDB replica set (including restart persistence and pagination boundary checks). |
 | **End-to-End Demo Scenario** | `npm run demo` | **PASS (20/20 requests)** | 18 Phase 1 requests + 2 delayed Phase 2 requests verified with drain settlement. |
-| **Load Benchmark Scenario** | `npm run load-test` | **PASS (1200 requests)** | 1,000 accepted (`202`), 200 replayed (`200`), 0 errors. Ingestion: 192.2 req/s, Drain: 8.41s. |
+| **Load Benchmark Scenario** | `npm run load-test` | **PASS (1200 requests)** | 1,000 accepted (`202`), 200 replayed (`200`), 0 errors. Ingestion: 191.8 req/s, Drain: 8.56s. |
 
 ---
 
